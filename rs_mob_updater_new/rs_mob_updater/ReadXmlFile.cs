@@ -29,18 +29,55 @@ namespace rs_mob_updater
     {
         static public List<ItemFromXML> ReadXML(String path)
         {
-            XmlTextReader reader;
+            if(path == null || path.Length == 0)
+            {
+                Program.MyWriteLine("ERRROR!!! " + "path == null || path.Length == 0");
+                return null;
+            }
 
+            XmlTextReader reader = null;
+            
             try 
-	        {	        
-		        reader = new XmlTextReader(path);
-	        } catch (Exception) { throw;}
+	        {
+
+                if (File.Exists(path))
+                {
+                    reader = new XmlTextReader(path);
+                }
+                else
+                {
+                    Program.MyWriteLine("ERRROR!!! " + "File not exist with path: " + path);
+                }
+		        
+	        } catch (Exception) 
+            {
+                Program.MyWriteLine("ERRROR!!! " + " new XmlTextReader(path) ");
+                return null;
+            }
+
+            if (reader == null)
+            {
+                Program.MyWriteLine("ERRROR!!! " + " reader = null ");
+                return null;
+            }
 
             List<ItemFromXML> listOfItemFromXML = new List<ItemFromXML>();
             ItemFromXML itemFromXML = new ItemFromXML();
 
-            while (reader.Read())
+            bool do_loop = true;
+            while (do_loop)
             {
+
+                try
+                {
+                    do_loop = reader.Read();
+                }
+                catch (Exception) 
+                {
+                    Program.MyWriteLine("ERRROR!!! " + "XML Invalid");
+                    return null;
+                }
+
                 // Program.MyWriteLine("reader.NodeType: " + reader.NodeType + "|  reader.Name = " + reader.Name);
 
                 if (reader.NodeType == XmlNodeType.Element)
@@ -53,7 +90,6 @@ namespace rs_mob_updater
                         // Program.MyWriteLine("to_comment_prefix: " + reader.GetAttribute("to_comment_prefix"));
                         // Program.MyWriteLine("--------------------------------------");
 
-
                         itemFromXML = new ItemFromXML();
                         listOfItemFromXML.Add(itemFromXML);
 
@@ -63,7 +99,7 @@ namespace rs_mob_updater
 
                         itemFromXML.to_comment_postfix = reader.GetAttribute("to_comment_postfix");
 
-                        if (itemFromXML.to_comment_postfix==null)
+                        if (itemFromXML.to_comment_postfix == null)
                         {
                             itemFromXML.to_comment_postfix = "";
                         }
@@ -90,10 +126,10 @@ namespace rs_mob_updater
             Program.MyWriteLine("--------------------------------------");
             foreach (ItemFromXML item in listOfItemFromXML)
             {
-                Program.MyWriteLine(item.name_file + " " + item.itemLines.Count);
+                Program.MyWriteLine("name_file: " + item.name_file + " | Count Lines:" + item.itemLines.Count);
                 foreach (ItemLine itemLine in item.itemLines)
                 {
-                    Program.MyWriteLine(itemLine.direction_of_commenting + "   " + itemLine.line);
+                    Program.MyWriteLine("   direction_of_commenting: " + itemLine.direction_of_commenting + " | line: " + itemLine.line);
                 }
             }
             Program.MyWriteLine("--------------------------------------");

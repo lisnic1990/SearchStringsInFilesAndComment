@@ -17,24 +17,35 @@ namespace rs_mob_updater
 
         static List<ItemFromXML> listOfItemFromXML;
 
+        public const String default_path = "list_files.xml";
+
         public static void MyWriteLine(string p = "")
         {
             System.Diagnostics.Debug.WriteLine(p);
             Console.WriteLine(p);
         }
 
+        // "..\list_files.xml"
+
         static void Main(string[] args)
         {
-            if (args.Length != 1)
-            {
-                MyWriteLine("Ты должен ввести параметры:");
-                MyWriteLine("1. Путь к файлу со списком настроек - (к примеру: list_files.xml)");
-                // Console.ReadKey();
-                return;
-            }
-
             // получаю путь к файлу xml  с настроиками
-            String url_file_xml = args[0];
+            String url_file_xml = null;
+
+            if (args.Length == 0)
+            {
+                MyWriteLine("Argument: Path to file is not exist!");
+                MyWriteLine("Trying open file with default path: " + default_path);
+
+                url_file_xml = default_path;
+            }
+            else if (args.Length > 0)
+                {
+                    MyWriteLine("Argument: Path to file:" + args[0]);
+
+                    // получаю путь к файлу xml  с настроиками
+                    url_file_xml = args[0];
+                }
 
             // читаю файл и получаю список настроек
             listOfItemFromXML = ReadXmlFile.ReadXML(url_file_xml);
@@ -55,7 +66,7 @@ namespace rs_mob_updater
 
         private static void start_parse_files()
         {
-            MyWriteLine("start_parse_files--------------------------------------START");
+            MyWriteLine("start_parse_files -------------- START");
             foreach (ItemFromXML item in listOfItemFromXML)
             {
                 foreach (ItemLine itemLine in item.itemLines)
@@ -63,12 +74,20 @@ namespace rs_mob_updater
                     do_changes_by_direction_of_commenting(item, itemLine);
                 }
             }
-            MyWriteLine("start_parse_files--------------------------------------END");
+            MyWriteLine("start_parse_files -------------- END");
 
         }
 
         private static void do_changes_by_direction_of_commenting(ItemFromXML item, ItemLine itemLine)
         {
+            String path_to_dir = item.path_to_dir;
+
+            if (path_to_dir.Length > 0 && path_to_dir.LastIndexOf("/") != (path_to_dir.Length - 1))
+            {
+                MyWriteLine("/ - in path_to_dir: NOT EXIST !" + "\n");
+                item.path_to_dir = path_to_dir + "/";
+            }
+
             path_to_target_file = item.path_to_dir + item.name_file;
             to_comment_prefix = item.to_comment_prefix;
             to_comment_postfix = item.to_comment_postfix;
