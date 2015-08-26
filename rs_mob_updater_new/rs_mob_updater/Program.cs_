@@ -1,0 +1,275 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+
+// rs_mob_updater.exe "../lines.txt" "../Game.as" 1
+// "../lines.txt" "../Game.as" 1
+
+namespace rs_mob_updater
+{
+    class Program
+    {
+        static List<string> _list_lines;
+
+        static string url_file_lines;
+        static string path_to_target_file;
+        static string param;
+         
+        static string to_comment_prefix;
+
+        static void Main(string[] args)
+        {
+            if (args.Length != 3)
+            {
+                Console.WriteLine("Ты должен ввести параметры:");
+                Console.WriteLine("1) Путь к файлу - lines");
+                Console.WriteLine("2) Путь к файлу - target");
+                Console.WriteLine("3) 1 или 2 - для коментировать или де-коментировать");
+                Console.ReadKey();
+
+                return;
+            }
+
+            url_file_lines = args[0];
+            path_to_target_file = args[1];
+            param = args[2];
+
+            //-------------------------------------------------------------------------------------------------------------
+
+            if (url_file_lines == null || url_file_lines.Length == 0)
+            {
+                Console.WriteLine("Ты должен ввести параметры:");
+                Console.WriteLine("1) Путь к файлу - lines");
+                Console.ReadKey();
+                return;
+            }
+            if (path_to_target_file == null || path_to_target_file.Length == 0)
+            {
+                Console.WriteLine("Ты должен ввести параметры:");
+                Console.WriteLine("2) Путь к файлу - target");
+                Console.ReadKey();
+                return;
+            }
+            if (param == null || param.Length == 0)
+            {
+                Console.WriteLine("Ты должен ввести параметры:");
+                Console.WriteLine("3) 1 или 2 - для коментировать или де-коментировать");
+                Console.ReadKey();
+                return;
+            }
+
+            //-------------------------------------------------------------------------------------------------------------
+
+            // читаю строки из файла url_file_lines
+            read_list_lines(url_file_lines);
+
+            //-------------------------------------------------------------------------------------------------------------
+
+            if (_list_lines == null || _list_lines.Count == 0)
+            {
+                Console.WriteLine("файл: " + url_file_lines + " пустой либо отсутствует.");
+                Console.ReadKey();
+                return;
+            }
+
+            //-------------------------------------------------------------------------------------------------------------
+
+            init_RS();
+
+        }
+
+        /**
+         * Считывает вводные строки из файла
+         */
+        private static void read_list_lines(string url_file)
+        {
+            _list_lines = new List<string>();
+
+            string[] readText = File.ReadAllLines(url_file);
+
+            foreach (string s in readText)
+            {
+                Console.WriteLine(s);
+                if(s.Length > 0) {
+                    _list_lines.Add(s);
+                }
+            }
+        }
+
+        /*
+        private static void init_list_lines()
+        {
+            _list_lines = new List<string>();
+            _list_lines.Add("import com.fbfolder.mob.FBManagerMob;");
+            _list_lines.Add("GameVar.FBManager = new FBManagerMob");
+            _list_lines.Add("InAppPurchaseManager.init");
+        }
+        private static void initReadFile(string[] args)
+        {
+            if (args.Length == 2) 
+            {
+                init_RS(args);
+            }
+            else
+            {
+                Console.WriteLine("Ты должен ввести параметры:");
+                Console.WriteLine("1) Путь к файлу");
+                Console.WriteLine("2) 1 или 2 - для коментировать или де-коментировать");
+                Console.ReadKey();
+            }
+        }
+        */
+
+        private static void init_RS()
+        {
+            to_comment_prefix = "// ";
+
+            switch (param)
+            {
+                // Коментирует, если ещё не коментировано:
+                case "1":
+                    Console.WriteLine("Case 1");
+                    do_1();
+                    break;
+
+                // Де-коментирует, если еще не де-коментировано:
+                case "2":
+                    Console.WriteLine("Case 2");
+                    do_2();
+                    break;
+
+                default:
+                    Console.WriteLine("Default case");
+                    Console.WriteLine("Press Any Key to exit");
+                    Console.ReadKey();
+                    break;
+            }
+
+        }
+
+        // Коментирует, если ещё не коментировано:
+        private static void do_1()
+        {
+            for (int i = 0; i < _list_lines.Count; i++)
+            {
+                do_1_for_line(_list_lines[i]);
+            }
+        }
+
+        private static void do_1_for_line(string target_line)
+        {
+            string to_search = target_line;
+            string to_replace = to_comment_prefix + to_search;
+            if (isNotExist(path_to_target_file, to_replace))
+            {
+                searchAndRelace(path_to_target_file, to_search, to_replace);
+            }
+        }
+
+        //-------------------------------------------------------------------------------------------------------------
+
+        // Де-коментирует, если еще не де-коментировано:
+        private static void do_2()
+        {
+            for (int i = 0; i < _list_lines.Count; i++)
+            {
+                do_2_for_line(_list_lines[i]);
+            }
+        }
+
+        private static void do_2_for_line(string target_line)
+        {
+            string to_replace = target_line;
+            string to_search = to_comment_prefix + to_replace;
+            if (isExist(path_to_target_file, to_search))
+            {
+                searchAndRelace(path_to_target_file, to_search, to_replace);
+            }
+        }
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        private static bool isExist(string url_file, string to_search)
+        {
+            string file_string = File.ReadAllText(url_file);
+
+            return Regex.IsMatch(file_string, to_search);
+        }
+
+        private static bool isNotExist(string url_file, string to_search)
+        {
+            string file_string = File.ReadAllText(url_file);
+
+            return !Regex.IsMatch(file_string, to_search);
+        }
+
+        //-------------------------------------------------------------------------------------------------------------
+
+        private static void searchAndRelace(string url_file, string to_search, string to_replace)
+        {
+            string file_string = File.ReadAllText(url_file);
+
+            // Если есть вообще такая строка:
+            if (Regex.IsMatch(file_string, to_search))
+            {
+                // поиск и замена:
+                File.WriteAllText(url_file, Regex.Replace(file_string, to_search, to_replace));
+
+                Console.WriteLine("В файле: " + url_file + ":");
+                Console.WriteLine("Нашёл строку: " + to_search);
+                Console.WriteLine("Заменил на строку: " + to_replace);
+                Console.WriteLine();
+            }
+        }
+
+        //-------------------------------------------------------------------------------------------------------------
+
+
+        /*
+        private static void initReadFile(string path_to_target_file)
+        {
+            searchAndCommentLine(path_to_target_file, "import com.fbfolder.mob.FBManagerMob;");
+            searchAndCommentLine(path_to_target_file, "GameVar.FBManager = new FBManagerMob");
+            // Console.ReadKey();
+        }
+
+        private static void searchAndCommentLine(string url_file, string to_search)
+        {
+            string file_string = File.ReadAllText(url_file);
+            string to_replace = "// " + to_search;
+
+            // Если строка уже закоментирована, то раскоментирую её:
+            if( Regex.IsMatch(file_string, to_replace) )
+            {
+                File.WriteAllText(url_file, Regex.Replace(file_string, to_replace, to_search));
+
+                Console.WriteLine("В файле: " + url_file + ":");
+                Console.WriteLine("Нашёл строку: " + to_replace);
+                Console.WriteLine("Заменил на строку: " + to_search);
+
+            }
+            else
+            {
+                // Если есть вообще такая строка:
+                if (Regex.IsMatch(file_string, to_search))
+                {
+                    // коментирую её:
+                    File.WriteAllText(url_file, Regex.Replace(file_string, to_search, to_replace));
+
+                    Console.WriteLine("В файле: " + url_file + ":");
+                    Console.WriteLine("Нашёл строку: " + to_search);
+                    Console.WriteLine("Заменил на строку: " + to_replace);
+                }
+            }
+
+            Console.WriteLine();
+
+        }
+        */
+
+    }
+}
