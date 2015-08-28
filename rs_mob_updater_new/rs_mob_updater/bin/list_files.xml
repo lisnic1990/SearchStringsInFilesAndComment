@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <items>
+
 <item path_to_dir="../" name_file="target_file_for_example.txt" to_comment_prefix="&lt;!--" to_comment_postfix="--&gt;">
-	<sub direction_of_commenting="1" line="System.Console.WriteLine(&quot;Hello World!&quot;);" />
+	<sub direction_of_commenting="2" line="System.Console.WriteLine(&quot;Hello World!&quot;);" />
 </item>
-<item path_to_dir="../" name_file="target_file_for_example.txt" to_comment_prefix="//">
-	<sub direction_of_commenting="1" line="System.Console.ReadKey();" />
+<item path_to_dir="../" name_file="target_file_for_example.txt" to_comment_prefix="&lt;!--" to_comment_postfix="--&gt;">
+	<sub direction_of_commenting="2" line="class Hello " line2="Replaced" />
+	<sub direction_of_commenting="2" line="System.Console.WriteLine(&quot;Hello World!&quot;);" />
 </item>
+<item path_to_dir="../" name_file="target_file_for_example.txt">
+	<sub direction_of_commenting="3" line="//blockquote" line2="" />
+	<sub direction_of_commenting="3" line="blockquote" line2="" />
+</item>
+
 </items>

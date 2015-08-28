@@ -11,6 +11,13 @@ namespace rs_mob_updater
 {
     class Program
     {
+        enum DIRECTION_OF_COMMENTING
+        {
+            Comment = 1,
+            DeComment,
+            Replace
+        }
+
         static string path_to_target_file;
         static string to_comment_prefix;
         static string to_comment_postfix;
@@ -53,7 +60,7 @@ namespace rs_mob_updater
             if (listOfItemFromXML == null || listOfItemFromXML.Count == 0)
             {
                 MyWriteLine("Список настроек пуст, либо равен null");
-                // Console.ReadKey();
+                
                 return;
             }
 
@@ -61,12 +68,12 @@ namespace rs_mob_updater
 
             start_parse_files();
 
-            // Console.ReadKey();
+            
         }
 
         private static void start_parse_files()
         {
-            MyWriteLine("start_parse_files -------------- START");
+            MyWriteLine("START_PARSE_FILES -------------- START" + "\n");
             foreach (ItemFromXML item in listOfItemFromXML)
             {
                 foreach (ItemLine itemLine in item.itemLines)
@@ -74,14 +81,24 @@ namespace rs_mob_updater
                     do_changes_by_direction_of_commenting(item, itemLine);
                 }
             }
-            MyWriteLine("start_parse_files -------------- END");
+            MyWriteLine("START_PARSE_FILES -------------- END");
 
         }
 
+        /// <summary>
+        /// Изменяет файл согласно заданным параметрам
+        /// </summary>
+        /// <param name="item">Элемент item из xml файла настроек, содержащий параметры поиска</param>
+        /// <param name="itemLine">Строка, которую необходимо найти</param>
         private static void do_changes_by_direction_of_commenting(ItemFromXML item, ItemLine itemLine)
         {
-            String path_to_dir = item.path_to_dir;
+            if (item.path_to_dir == null)
+            {
+                Program.MyWriteLine("ERRROR!!! " + " item.path_to_dir = null " + "\n");
+                return;
+            }
 
+            String path_to_dir = item.path_to_dir;
             if (path_to_dir.Length > 0 && path_to_dir.LastIndexOf("/") != (path_to_dir.Length - 1))
             {
                 MyWriteLine("/ - in path_to_dir: NOT EXIST !" + "\n");
@@ -92,10 +109,12 @@ namespace rs_mob_updater
             to_comment_prefix = item.to_comment_prefix;
             to_comment_postfix = item.to_comment_postfix;
 
-            switch (itemLine.direction_of_commenting)
+            DIRECTION_OF_COMMENTING dir_of_com = (DIRECTION_OF_COMMENTING) itemLine.direction_of_commenting;
+
+            switch (dir_of_com)
             {
                 // Коментирует, если ещё не коментировано:
-                case 1:
+                case DIRECTION_OF_COMMENTING.Comment:
                     MyWriteLine("Case 1 " + "[ Commented if did not make comments ]" + "\n");
 
                     do_1_for_line(itemLine.line);
@@ -103,30 +122,41 @@ namespace rs_mob_updater
                     break;
 
                 // Де-коментирует, если еще не де-коментировано:
-                case 2:
+                case DIRECTION_OF_COMMENTING.DeComment:
                     MyWriteLine("Case 2 " + "[ De-commented, if not de-comment ]" + "\n");
 
                     do_2_for_line(itemLine.line);
 
                     break;
 
+                // Заменяет строку line на line2:
+                case DIRECTION_OF_COMMENTING.Replace:
+                    MyWriteLine("Case 3 " + "[ Replace line ]" + "\n");
+
+                    do_3_for_line(itemLine.line, itemLine.line2);
+
+                    break;
+
                 default:
-                    MyWriteLine("Default case");
-                    MyWriteLine("Press Any Key to exit");
-                    // Console.ReadKey();
+                    MyWriteLine("Default case. " + "itemLine.direction_of_commenting: " + itemLine.direction_of_commenting.ToString() + "\n");
                     break;
             }
 
         }
 
-        // Коментирует, если ещё не коментировано:
+        //-------------------------------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// Коментирует, если ещё не коментировано
+        /// </summary>
+        /// <param name="target_line"></param>
         private static void do_1_for_line(string target_line)
         {
             string to_search = target_line;
             string to_replace = to_comment_prefix + to_search + to_comment_postfix;
 
-            if (isNotExist(path_to_target_file, to_replace))
+            // if (isNotExist(path_to_target_file, to_replace))
+            if (isExist(path_to_target_file, to_replace) == 0)
             {
                 searchAndRelace(path_to_target_file, to_search, to_replace);
             } 
@@ -141,14 +171,17 @@ namespace rs_mob_updater
 
         //-------------------------------------------------------------------------------------------------------------
 
-        // Де-коментирует, если еще не де-коментировано:
 
+        /// <summary>
+        /// Де-коментирует, если еще не де-коментировано
+        /// </summary>
+        /// <param name="target_line"></param>
         private static void do_2_for_line(string target_line)
         {
             string to_replace = target_line;
             string to_search = to_comment_prefix + to_replace + to_comment_postfix;
 
-            if (isExist(path_to_target_file, to_search))
+            if (isExist(path_to_target_file, to_search) == 1)
             {
                 searchAndRelace(path_to_target_file, to_search, to_replace);
             }
@@ -163,78 +196,73 @@ namespace rs_mob_updater
 
 
         //-------------------------------------------------------------------------------------------------------------
-        private static bool isExist(string url_file, string to_search)
+
+        private static void do_3_for_line(string to_search, string to_replace)
         {
-            String file_string = "";
-
-            try
+            if (isExist(path_to_target_file, to_search) == 1)
             {
-                if (File.Exists(url_file))
-                {
-                    file_string = File.ReadAllText(url_file);
-                }
-                else
-                {
-                    MyWriteLine("ERRROR!!! " + "File not exist with path: " + url_file);
-                    // Console.ReadKey();
-                }
+                searchAndRelace(path_to_target_file, to_search, to_replace);
             }
-            catch (IOException e)
+            else
             {
-                if (e.Source != null)
-                    MyWriteLine("ReadAllText Error");
-                // Console.ReadKey();
-                throw;
+                MyWriteLine("  Path: " + path_to_target_file);
+                MyWriteLine("  to_search: " + to_search);
+                MyWriteLine("  to_replace: " + to_replace);
+                MyWriteLine("  Not Contains!!!" + "\n");
             }
-
-            bool result = file_string.Contains(to_search);
-            return result;
-        }
-
-        private static bool isNotExist(string url_file, string to_search)
-        {
-            String file_string = "";
-
-            try
-            {
-                if (File.Exists(url_file))
-                {
-                    file_string = File.ReadAllText(url_file);
-                }
-                else
-                {
-                    MyWriteLine("ERRROR!!! " + "File not exist with path: " + url_file);
-                    // Console.ReadKey();
-                }
-            }
-            catch (IOException e)
-            {
-                if (e.Source != null)
-                    MyWriteLine("Method: isNotExist. " + "ReadAllText Error");
-                // Console.ReadKey();
-                throw;
-            }
-
-
-            bool result = file_string.Contains(to_search);
-            return !result;
         }
 
         //-------------------------------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// Проверяет, если файл содержит строку
+        /// </summary>
+        /// <param name="url_file">путь к файлу</param>
+        /// <param name="to_search">строка для поиска</param>
+        /// <returns>Возвращает -1 - нет файла, 0 - не найдена строка, 1 - найдена строка</returns>
+        private static int isExist(string url_file, string to_search)
+        {
+            String file_string = "";
+
+            try
+            {
+                if (File.Exists(url_file))
+                {
+                    file_string = File.ReadAllText(url_file);
+                }
+                else
+                {
+                    MyWriteLine("ERRROR!!! " + "File not exist with path: " + url_file);
+                    return -1;
+                }
+            }
+            catch (IOException e)
+            {
+                if (e.Source != null)
+                    MyWriteLine("ReadAllText Error: " + e.Message);
+                return -1;
+            }
+
+            int result = (file_string.Contains(to_search))?1:0;
+            return result;
+        }
+
+        //-------------------------------------------------------------------------------------------------------------
+        /// <summary>
+        /// Ищет строку и заменяет её
+        /// </summary>
+        /// <param name="url_file">путь к файлу</param>
+        /// <param name="to_search">строка для поиска</param>
+        /// <param name="to_replace">строка для замены</param>
         private static void searchAndRelace(string url_file, string to_search, string to_replace)
         {
             string file_string = File.ReadAllText(url_file);
 
             // Если есть вообще такая строка:
             bool result = file_string.Contains(to_search);
-            // if (Regex.IsMatch(file_string, to_search))
+
             if (result)
             {
-
-               // to_search = "TextField.registerBitmapFont" + "("+ "*" + ");";
-               // string str_to_write = Regex.Replace(file_string, to_search, to_replace);
-
                string str_to_write = file_string.Replace(to_search, to_replace);
 
                 File.WriteAllText(url_file, str_to_write);
@@ -244,31 +272,15 @@ namespace rs_mob_updater
                 MyWriteLine("  Replaced with a string: " + to_replace);
                 MyWriteLine();
             }
+            else
+            {
+                MyWriteLine("  Path: " + url_file + ":");
+                MyWriteLine("  Found string: " + to_search);
+                MyWriteLine("  Not Contains!!!" + "\n");
+                MyWriteLine();
+            }
         }
 
         //-------------------------------------------------------------------------------------------------------------
     }
 }
-
-
-
-
-/*
-// поиск и замена:
-String file_string_replaced = Regex.Replace(file_string, to_search, to_replace);
-
-if (file_string != file_string_replaced)
-{
-    File.WriteAllText(url_file, file_string);
-
-    MyWriteLine("  Path: " + url_file + ":");
-    MyWriteLine("  Found string: " + to_search);
-    MyWriteLine("  Replaced with a string: " + to_replace);
-    MyWriteLine();
-}
-else
-{
-    MyWriteLine("  Без изменений эта строка осталась: " + to_replace);
-    MyWriteLine();
-}
-*/
